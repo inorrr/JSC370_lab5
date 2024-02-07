@@ -103,7 +103,7 @@ library(kableExtra)
 ```
 
 
-```{r, eval=FALSE}
+```{r}
 fn <- "https://raw.githubusercontent.com/JSC370/JSC370-2024/main/data/met_all_2023.gz"
 if (!file.exists("met_all_2023.gz"))
   download.file(fn, destfile = "met_all_2023.gz")
@@ -112,7 +112,7 @@ met <- data.table::fread("met_all_2023.gz")
 
 2. Load the met data from https://github.com/JSC370/JSC370-2024/main/data/met_all_2023.gz or  (Use https://raw.githubusercontent.com/JSC370/JSC370-2024/main/data/met_all_2023.gz to download programmatically), and also the station data. For the latter, you can use the code we used during lecture to pre-process the stations data:
 
-```{r stations-data, eval = FALSE}
+```{r stations-data}
 # Download the data
 stations <- fread("ftp://ftp.ncdc.noaa.gov/pub/data/noaa/isd-history.csv")
 stations[, USAF := as.integer(USAF)]
@@ -133,12 +133,34 @@ stations[, n := 1:.N, by = .(USAF)]
 stations <- stations[n == 1,][, n := NULL]
 
 # Read in the met data and fix lat, lon, temp
+met$lat <- met$lat / 1000
+met$lon <- met$lon / 1000
+
+met$wind.sp <- met$wind.sp / 10
+met$temp <- met$temp / 10
+met$dew.point <- met$dew.point / 10
+met$atm.press <- met$atm.press / 10
+
+met$relative_humidity <- 100*((112-0.1*met$temp+met$dew.point)/(112+0.9*met$temp))^8
 ```
 
 3. Merge the data as we did during the lecture. Use the `merge()` code and you can also try the tidy way with `left_join()`
 
 ```{r}
+met_dt <- merge(
+  # Data
+  x     = met,      
+  y     = stations, 
+  # List of variables to match
+  by.x  = "USAFID",
+  by.y  = "USAF", 
+  # Which obs to keep?
+  all.x = TRUE,      
+  all.y = FALSE
+  )
 
+head(met_dt[, list(USAFID, WBAN, STATE)], n = 4)
+dim(met_dt)
 ```
 
 ## Question 1: Identifying Representative Stations
@@ -147,13 +169,46 @@ Across all weather stations, which stations have the median values of temperatur
 
 ```{r}
 
+temp_median <- quantile(met_dt$temp, probs = 0.5, na.rm = TRUE)
+wind_speed_median <- quantile(met_dt$wind.sp, probs = 0.5, na.rm = TRUE)
+pressure_median <- quantile(met_dt$atm.press, probs = 0.5, na.rm = TRUE)
+
+stations_temp_median <- (met_dt %>% group_by(USAFID) %>% summarise(median_temp = median(temp, na.rm = TRUE)))
+stations_wind_speed_median <- (met_dt %>% group_by(USAFID) %>% summarise(median_wind_speed = median(wind.sp, na.rm = TRUE)))
+stations_pressure_median <- (met_dt %>% group_by(USAFID) %>% summarise(median_pressure = median(atm.press, na.rm = TRUE)))
+
+equal_stations_temp_median <- 
+  stations_temp_median$USAFID[which(stations_temp_median$median_temp == temp_median)]
+equal_stations_wind_speed_median <- 
+  stations_wind_speed_median$USAFID[which(stations_wind_speed_median$median_wind_speed == wind_speed_median)]
+equal_stations_pressure_median <- 
+  stations_pressure_median$USAFID[which(stations_pressure_median$median_pressure == pressure_median)]
+
+common_stations <- intersect(intersect(equal_stations_temp_median, equal_stations_wind_speed_median), equal_stations_pressure_median)
+
+#print(equal_stations_temp_median)
+#print("__________")
+#print(equal_stations_wind_speed_median)
+#print("__________")
+#print(equal_stations_pressure_median)
+#print("__________")
+print(common_stations)
+
+
 ```
+
+Station 723119 is the only coincide station. 
 
 Next identify the stations have these median values.
 
 ```{r}
+# From previous part, 723119 is the only coincide station
+
+desired_station <- met_dt[met_dt$USAFID == 723119]
+print(head(desired_station[, c("STATE", "LAT", "LON")], 1))
 
 ```
+This station is in the state of SC with latitude 34.849	and longitude -82.35.
 
 Knit the document, commit your changes, and save it on GitHub. Don't forget to add `README.md` to the tree, the first time you render it.
 
