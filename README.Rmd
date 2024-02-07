@@ -11,10 +11,10 @@ link-citations: yes
 
 # Learning goals
 
-- Use the `merge()` function to join two datasets.
-- Deal with missings and impute data.
-- Identify relevant observations using `quantile()`.
-- Practice your GitHub skills.
+-   Use the `merge()` function to join two datasets.
+-   Deal with missings and impute data.
+-   Identify relevant observations using `quantile()`.
+-   Practice your GitHub skills.
 
 # Lab description
 
@@ -24,19 +24,19 @@ This markdown document should be rendered using `github_document` document.
 
 # Part 1: Setup a Git project and the GitHub repository
 
-1. Go to wherever you are planning to store the data on your computer, and create a folder for this project
+1.  Go to wherever you are planning to store the data on your computer, and create a folder for this project
 
-2. In that folder, save [this template](https://github.com/JSC370/JSC370-2024/blob/main/labs/lab05/lab05-wrangling-gam.Rmd) as "README.Rmd". This will be the markdown file where all the magic will happen.
+2.  In that folder, save [this template](https://github.com/JSC370/JSC370-2024/blob/main/labs/lab05/lab05-wrangling-gam.Rmd) as "README.Rmd". This will be the markdown file where all the magic will happen.
 
-3. Go to your GitHub account and create a new repository of the same name that your local folder has, e.g., "JSC370-labs".
+3.  Go to your GitHub account and create a new repository of the same name that your local folder has, e.g., "JSC370-labs".
 
-4. Initialize the Git project, add the "README.Rmd" file, and make your first commit.
+4.  Initialize the Git project, add the "README.Rmd" file, and make your first commit.
 
-5. Add the repo you just created on GitHub.com to the list of remotes, and push your commit to origin while setting the upstream.
+5.  Add the repo you just created on GitHub.com to the list of remotes, and push your commit to origin while setting the upstream.
 
 Most of the steps can be done using command line:
 
-```sh
+``` sh
 # Step 1
 cd ~/Documents
 mkdir JSC370-labs
@@ -63,7 +63,7 @@ git push -u origin master
 
 You can also complete the steps in R (replace with your paths/username when needed)
 
-```r
+``` r
 # Step 1
 setwd("~/Documents")
 dir.create("JSC370-labs")
@@ -90,7 +90,7 @@ Once you are done setting up the project, you can now start working with the MET
 
 ## Setup in R
 
-1. Load the `data.table` (and the `dtplyr` and `dplyr` packages), `mgcv`, `ggplot2`, `leaflet`, `kableExtra`.
+1.  Load the `data.table` (and the `dtplyr` and `dplyr` packages), `mgcv`, `ggplot2`, `leaflet`, `kableExtra`.
 
 ```{r packages, warning=FALSE}
 library(data.table)
@@ -100,8 +100,8 @@ library(mgcv)
 library(ggplot2)
 library(leaflet)
 library(kableExtra)
+library(tidyr)
 ```
-
 
 ```{r}
 fn <- "https://raw.githubusercontent.com/JSC370/JSC370-2024/main/data/met_all_2023.gz"
@@ -110,7 +110,7 @@ if (!file.exists("met_all_2023.gz"))
 met <- data.table::fread("met_all_2023.gz")
 ```
 
-2. Load the met data from https://github.com/JSC370/JSC370-2024/main/data/met_all_2023.gz or  (Use https://raw.githubusercontent.com/JSC370/JSC370-2024/main/data/met_all_2023.gz to download programmatically), and also the station data. For the latter, you can use the code we used during lecture to pre-process the stations data:
+2.  Load the met data from <https://github.com/JSC370/JSC370-2024/main/data/met_all_2023.gz> or (Use <https://raw.githubusercontent.com/JSC370/JSC370-2024/main/data/met_all_2023.gz> to download programmatically), and also the station data. For the latter, you can use the code we used during lecture to pre-process the stations data:
 
 ```{r stations-data}
 # Download the data
@@ -144,7 +144,7 @@ met$atm.press <- met$atm.press / 10
 met$relative_humidity <- 100*((112-0.1*met$temp+met$dew.point)/(112+0.9*met$temp))^8
 ```
 
-3. Merge the data as we did during the lecture. Use the `merge()` code and you can also try the tidy way with `left_join()`
+3.  Merge the data as we did during the lecture. Use the `merge()` code and you can also try the tidy way with `left_join()`
 
 ```{r}
 met_dt <- merge(
@@ -193,7 +193,7 @@ print(common_stations)
 
 ```
 
-Station 723119 is the only coincide station. 
+Station 723119 is the only coincide station.
 
 Next identify the stations have these median values.
 
@@ -204,13 +204,14 @@ desired_station <- met_dt[met_dt$USAFID == 723119]
 print(head(desired_station[, c("STATE", "LAT", "LON")], 1))
 
 ```
-This station is in the state of SC with latitude 34.849	and longitude -82.35.
+
+This station is in the state of SC with latitude 34.849 and longitude -82.35.
 
 Knit the document, commit your changes, and save it on GitHub. Don't forget to add `README.md` to the tree, the first time you render it.
 
 ## Question 2: Identifying Representative Stations per State
 
-Now let's find the weather stations by state with closest temperature and wind speed based on the euclidean distance from these medians. 
+Now let's find the weather stations by state with closest temperature and wind speed based on the euclidean distance from these medians.
 
 ```{r, warning=FALSE}
 states_median <- met_dt %>% 
@@ -246,7 +247,7 @@ Knit the doc and save it on GitHub.
 
 ## Question 3: In the Geographic Center?
 
-For each state, identify which station is closest to the geographic mid-point (median) of the state. Combining these with the stations you identified in the previous question, use `leaflet()` to visualize all ~100 points in the same figure, applying different colors for the geographic median and the temperature and wind speed median.
+For each state, identify which station is closest to the geographic mid-point (median) of the state. Combining these with the stations you identified in the previous question, use `leaflet()` to visualize all \~100 points in the same figure, applying different colors for the geographic median and the temperature and wind speed median.
 
 ```{r}
 state_geo_median <- stations %>% group_by(STATE) %>% summarise(median_lat = median(LAT, na.rm = TRUE),
@@ -276,35 +277,55 @@ l <- leaflet(state_geo_median) %>%
     options = layersControlOptions(collapsed = FALSE)
   )
 
+# uncomment the code below to see the map
+l
+
 ```
 
 Knit the doc and save it on GitHub.
 
 ## Question 4: Summary Table with `kableExtra`
 
-Generate a summary table using `kable` where the rows are each state and the columns represent average temperature broken down by low, median, and high elevation stations. 
+Generate a summary table using `kable` where the rows are each state and the columns represent average temperature broken down by low, median, and high elevation stations.
 
 Use the following breakdown for elevation:
 
-- Low: elev < 93
-- Mid: elev >= 93 and elev < 401
-- High: elev >= 401
+-   Low: elev \< 93
+-   Mid: elev \>= 93 and elev \< 401
+-   High: elev \>= 401
 
 ```{r}
+met_dt <- met_dt %>% mutate(elev_category = case_when(
+  elev < 93 ~ "low",
+  elev >= 93 & elev < 401 ~ "mid",
+  elev >= 401 ~ "high")
+)
+
+summary_table <- met_dt %>% 
+  group_by(STATE, elev_category) %>% 
+  summarise(avg_temp = mean(temp, na.rm = TRUE), .groups = "drop") 
+
+summary_table <- spread(summary_table, key = elev_category, value = avg_temp)
+colnames(summary_table) <- c("State", "Low Elevation", "Mid Elevation", "High Elevation")
+
+# uncomment the code below to see the summary table
+#kable(summary_table, 
+#      caption = "Average Temperature by Elevation Category for Each #State") %>%
+#  kable_styling(full_width = FALSE)
 
 ```
 
+Note: kable produces HTML output but the output of this rmd file is not html. Therefore it cannot be knitted.
 
-Knit the document, commit your changes, and push them to GitHub. 
-
+Knit the document, commit your changes, and push them to GitHub.
 
 ## Question 5: Advanced Regression
 
 Let's practice running regression models with smooth functions on X. We need the `mgcv` package and `gam()` function to do this.
 
-- using your data with the median values per station, first create a lazy table. Filter out values of atmospheric pressure outside of the range 1000 to 1020. Examine the association between temperature (y) and atmospheric pressure (x). Create a scatterplot of the two variables using ggplot2. Add both a linear regression line and a smooth line.
+-   using your data with the median values per station, first create a lazy table. Filter out values of atmospheric pressure outside of the range 1000 to 1020. Examine the association between temperature (y) and atmospheric pressure (x). Create a scatterplot of the two variables using ggplot2. Add both a linear regression line and a smooth line.
 
-- fit both a linear model and a spline model (use `gam()` with a cubic regression spline on wind speed). Summarize and plot the results from the models and interpret which model is the best fit and why.
+-   fit both a linear model and a spline model (use `gam()` with a cubic regression spline on wind speed). Summarize and plot the results from the models and interpret which model is the best fit and why.
 
 ```{r}
 
@@ -312,6 +333,6 @@ Let's practice running regression models with smooth functions on X. We need the
 
 ## Deliverables
 
-- .Rmd file (this file)
+-   .Rmd file (this file)
 
-- link to the .md file (with all outputs) in your GitHub repository
+-   link to the .md file (with all outputs) in your GitHub repository
