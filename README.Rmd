@@ -173,9 +173,12 @@ temp_median <- quantile(met_dt$temp, probs = 0.5, na.rm = TRUE)
 wind_speed_median <- quantile(met_dt$wind.sp, probs = 0.5, na.rm = TRUE)
 pressure_median <- quantile(met_dt$atm.press, probs = 0.5, na.rm = TRUE)
 
-stations_temp_median <- (met_dt %>% group_by(USAFID) %>% summarise(median_temp = median(temp, na.rm = TRUE)))
-stations_wind_speed_median <- (met_dt %>% group_by(USAFID) %>% summarise(median_wind_speed = median(wind.sp, na.rm = TRUE)))
-stations_pressure_median <- (met_dt %>% group_by(USAFID) %>% summarise(median_pressure = median(atm.press, na.rm = TRUE)))
+stations_temp_median <- (met_dt %>% group_by(USAFID) %>% 
+                           summarise(median_temp = median(temp, na.rm = TRUE)))
+stations_wind_speed_median <- (met_dt %>% group_by(USAFID) %>% 
+                                 summarise(median_wind_speed = median(wind.sp, na.rm = TRUE)))
+stations_pressure_median <- (met_dt %>% group_by(USAFID) %>% 
+                               summarise(median_pressure = median(atm.press, na.rm = TRUE)))
 
 equal_stations_temp_median <- 
   stations_temp_median$USAFID[which(stations_temp_median$median_temp == temp_median)]
@@ -186,14 +189,7 @@ equal_stations_pressure_median <-
 
 common_stations <- intersect(intersect(equal_stations_temp_median, equal_stations_wind_speed_median), equal_stations_pressure_median)
 
-#print(equal_stations_temp_median)
-#print("__________")
-#print(equal_stations_wind_speed_median)
-#print("__________")
-#print(equal_stations_pressure_median)
-#print("__________")
 print(common_stations)
-
 
 ```
 
@@ -217,33 +213,33 @@ Knit the document, commit your changes, and save it on GitHub. Don't forget to a
 Now let's find the weather stations by state with closest temperature and wind speed based on the euclidean distance from these medians. 
 
 ```{r, warning=FALSE}
-states_median <- met_dt %>% group_by(STATE) %>% 
+states_median <- met_dt %>% 
+  group_by(STATE) %>% 
   summarise(state_median_temp =  median(temp, na.rm = TRUE),
             state_median_wind_speed = median(wind.sp, na.rm = TRUE))
-stations_median <- met_dt %>% group_by(USAFID) %>% 
+stations_median <- met_dt %>% 
+  group_by(USAFID) %>% 
   summarise(station_median_temp = median(temp, na.rm = TRUE),
             station_median_wind_speed = median(wind.sp, na.rm = TRUE),
             STATE = max(STATE))
 
-merged_df <- merge(
-  # Data
-  x     = states_median,      
-  y     = stations_median, 
-  # List of variables to match
-  by.x  = "STATE",
-  by.y  = "STATE", 
-  # Which obs to keep?
-  all.x = TRUE,      
-  all.y = TRUE
-  )
+merged_df <- merge(x = states_median, 
+                   y = stations_median, 
+                   by.x  = "STATE", 
+                   by.y  = "STATE", 
+                   all.x = TRUE, 
+                   all.y = TRUE)
 
 merged_df$temp_diff <- merged_df$station_median_temp - merged_df$state_median_temp
 merged_df$wind_speed_diff <- merged_df$station_median_wind_speed - merged_df$state_median_wind_speed
 merged_df$euclidean <- sqrt(merged_df$temp_diff**2 + merged_df$wind_speed_diff**2)
 
-merged_df_by_state <- merged_df %>% group_by(STATE) %>% arrange(euclidean) %>% slice(1)
-merged_df_by_state[, c("STATE", "USAFID", "euclidean")]
-
+merged_df_by_state <- merged_df %>% 
+  group_by(STATE) %>% 
+  arrange(euclidean) %>% 
+  slice(1)
+closest_stations <- merged_df_by_state[, c("STATE", "USAFID", "euclidean")]
+closest_stations
 ```
 
 Knit the doc and save it on GitHub.
@@ -253,6 +249,32 @@ Knit the doc and save it on GitHub.
 For each state, identify which station is closest to the geographic mid-point (median) of the state. Combining these with the stations you identified in the previous question, use `leaflet()` to visualize all ~100 points in the same figure, applying different colors for the geographic median and the temperature and wind speed median.
 
 ```{r}
+state_geo_median <- stations %>% group_by(STATE) %>% summarise(median_lat = median(LAT, na.rm = TRUE),
+                                                               median_long = median(LON, na.rm = TRUE))
+
+state_closest_station <- merge(x = closest_stations, 
+                   y = stations, 
+                   by.x  = "USAFID", 
+                   by.y  = "USAF", 
+                   all.x = TRUE, 
+                   all.y = FALSE)
+
+library(leaflet)
+
+l <- leaflet(state_geo_median) %>% 
+  addProviderTiles('CartoDB.Positron') %>% 
+  addCircleMarkers(data = state_geo_median, 
+                   lat = ~median_lat, lng = ~median_long, 
+                   opacity = 0.2, fillOpacity = 0.5, radius = 2, color = "blue",
+                   group = "Geograohic Median of States") %>% 
+  addCircleMarkers(data = state_closest_station, 
+                   lat = ~LAT, lng = ~LON, 
+                   opacity = 0.2, fillOpacity = 0.5, radius = 2, color = "red",
+                   group = "Closest Station Base on Euclidean Distance of Temperature and Wind Speed") %>%   
+  addLayersControl(overlayGroups = c("Geograohic Median of States", 
+                                     "Closest Station on Euclidean Distance of Temperature and Wind Speed"),
+    options = layersControlOptions(collapsed = FALSE)
+  )
 
 ```
 
