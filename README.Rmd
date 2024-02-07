@@ -216,7 +216,33 @@ Knit the document, commit your changes, and save it on GitHub. Don't forget to a
 
 Now let's find the weather stations by state with closest temperature and wind speed based on the euclidean distance from these medians. 
 
-```{r}
+```{r, warning=FALSE}
+states_median <- met_dt %>% group_by(STATE) %>% 
+  summarise(state_median_temp =  median(temp, na.rm = TRUE),
+            state_median_wind_speed = median(wind.sp, na.rm = TRUE))
+stations_median <- met_dt %>% group_by(USAFID) %>% 
+  summarise(station_median_temp = median(temp, na.rm = TRUE),
+            station_median_wind_speed = median(wind.sp, na.rm = TRUE),
+            STATE = max(STATE))
+
+merged_df <- merge(
+  # Data
+  x     = states_median,      
+  y     = stations_median, 
+  # List of variables to match
+  by.x  = "STATE",
+  by.y  = "STATE", 
+  # Which obs to keep?
+  all.x = TRUE,      
+  all.y = TRUE
+  )
+
+merged_df$temp_diff <- merged_df$station_median_temp - merged_df$state_median_temp
+merged_df$wind_speed_diff <- merged_df$station_median_wind_speed - merged_df$state_median_wind_speed
+merged_df$euclidean <- sqrt(merged_df$temp_diff**2 + merged_df$wind_speed_diff**2)
+
+merged_df_by_state <- merged_df %>% group_by(STATE) %>% arrange(euclidean) %>% slice(1)
+merged_df_by_state[, c("STATE", "USAFID", "euclidean")]
 
 ```
 
