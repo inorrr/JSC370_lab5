@@ -1,5 +1,7 @@
 ---
 title: "Lab 05 - Data Wrangling"
+author: "Yinuo Zhao"
+date: "Feb 07, 2024"
 output: 
   github_document: default
   tufte::tufte_html:
@@ -90,7 +92,7 @@ Once you are done setting up the project, you can now start working with the MET
 
 1. Load the `data.table` (and the `dtplyr` and `dplyr` packages), `mgcv`, `ggplot2`, `leaflet`, `kableExtra`.
 
-```{r packages warnings=FALSE}
+```{r packages, warning=FALSE}
 library(data.table)
 library(dtplyr)
 library(dplyr)
